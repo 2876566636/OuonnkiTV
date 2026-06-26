@@ -584,7 +584,6 @@ export default function UnifiedPlayer() {
 
   const episodePagination = useEpisodePagination({
     episodes,
-    selectedEpisode,
     defaultDescOrder: playback.defaultEpisodeOrder === 'desc',
   })
 
@@ -1074,9 +1073,8 @@ export default function UnifiedPlayer() {
     tmdbSeasonNumberForHistory,
   ])
 
-  const handleEpisodeChange = (displayIndex: number) => {
+  const handleEpisodeChange = (actualIndex: number) => {
     pendingSeekRef.current = null
-    const actualIndex = episodePagination.toActualIndex(displayIndex)
     if (actualIndex === selectedEpisode) return
     navigate(buildCurrentPlayPath(actualIndex), { replace: true })
   }
@@ -1620,7 +1618,7 @@ export default function UnifiedPlayer() {
 
         <aside className="min-w-0 xl:sticky xl:top-20 xl:h-[clamp(240px,56vw,74vh)] xl:min-h-[220px] xl:pr-1">
           {isCmsRoute ? (
-            <section className="space-y-3 rounded-lg border border-border/60 bg-card/55 p-3 md:p-4 xl:h-full xl:min-h-0">
+            <section className="flex flex-col gap-3 rounded-lg border border-border/60 bg-card/55 p-3 md:p-4 xl:h-full">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold">选集</h2>
                 <span className="text-muted-foreground text-xs">共 {detail.episodes.length} 集</span>
@@ -1630,16 +1628,12 @@ export default function UnifiedPlayer() {
                 selectedEpisode={selectedEpisode}
                 isReversed={episodePagination.isReversed}
                 onToggleOrder={() => episodePagination.setIsReversed(prev => !prev)}
-                pageRanges={episodePagination.pageRanges}
-                currentPageRange={episodePagination.currentPageRange}
-                onPageRangeChange={episodePagination.setCurrentPageRange}
-                episodes={episodePagination.currentPageEpisodes}
+                episodes={episodePagination.orderedEpisodes}
                 onEpisodeSelect={handleEpisodeChange}
                 episodeProgressMap={episodeProgressMap}
                 compact
-                fillHeight
                 hideHeader
-                className="border-0 bg-transparent p-0 md:p-0"
+                className="border-0 bg-transparent p-0 md:p-0 flex-1 min-h-0"
               />
             </section>
           ) : (
@@ -1780,16 +1774,12 @@ export default function UnifiedPlayer() {
                         selectedEpisode={selectedEpisode}
                         isReversed={episodePagination.isReversed}
                         onToggleOrder={() => episodePagination.setIsReversed(prev => !prev)}
-                        pageRanges={episodePagination.pageRanges}
-                        currentPageRange={episodePagination.currentPageRange}
-                        onPageRangeChange={episodePagination.setCurrentPageRange}
-                        episodes={episodePagination.currentPageEpisodes}
+                        episodes={episodePagination.orderedEpisodes}
                         onEpisodeSelect={handleEpisodeChange}
                         episodeProgressMap={episodeProgressMap}
                         compact
-                        fillHeight={activeRightPanel === 'episode'}
                         hideHeader
-                        className="border-0 bg-transparent p-0 md:p-0"
+                        className="border-0 bg-transparent p-0 md:p-0 xl:h-full"
                       />
                     </div>
                   </CollapsibleContent>

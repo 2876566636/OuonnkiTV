@@ -20,7 +20,7 @@ export const DEFAULT_SETTINGS = {
   playback: {
     isViewingHistoryEnabled: envSettings?.playback?.isViewingHistoryEnabled ?? true,
     isViewingHistoryVisible: envSettings?.playback?.isViewingHistoryVisible ?? true,
-    isAutoPlayEnabled: envSettings?.playback?.isAutoPlayEnabled ?? false,
+    isAutoPlayEnabled: envSettings?.playback?.isAutoPlayEnabled ?? true,
     defaultEpisodeOrder: envSettings?.playback?.defaultEpisodeOrder ?? 'asc',
     defaultVolume: envSettings?.playback?.defaultVolume ?? 0.7,
     playerThemeColor: envSettings?.playback?.playerThemeColor ?? '#ef4444',

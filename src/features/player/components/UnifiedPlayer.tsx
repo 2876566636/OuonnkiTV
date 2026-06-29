@@ -173,6 +173,8 @@ export default function UnifiedPlayer() {
   const playbackRef = useRef(playback)
   const detailRef = useRef<DetailResult | null>(null)
   const pendingSeekRef = useRef<number | null>(null)
+  const pendingAutoPlayRef = useRef(false)
+  const sessionPlaybackStateRef = useRef<{ playbackRate: number; volume: number } | null>(null)
   const detailRequestSeqRef = useRef(0)
   const loadedDetailKeyRef = useRef('')
   const tmdbSelectionLockRef = useRef<TmdbSelectionLock | null>(null)
@@ -713,6 +715,7 @@ export default function UnifiedPlayer() {
       if (!playbackRef.current.isAutoPlayEnabled) return
 
       if (selectedEpisode < episodes.length - 1) {
+        pendingAutoPlayRef.current = true
         const nextIndex = selectedEpisode + 1
         navigate(buildCurrentPlayPath(nextIndex), { replace: true })
         showPlayerNotice(`即将播放下一集: ${episodes[nextIndex]}`)
@@ -722,10 +725,10 @@ export default function UnifiedPlayer() {
     const art = new Artplayer({
       container: containerRef.current,
       url: detail.episodes[selectedEpisode],
-      volume: playbackRef.current.defaultVolume,
+      volume: sessionPlaybackStateRef.current?.volume ?? playbackRef.current.defaultVolume,
       isLive: false,
       muted: false,
-      autoplay: false,
+      autoplay: pendingAutoPlayRef.current,
       pip: playbackRef.current.isPipEnabled,
       autoSize: false,
       autoMini: false, // 内置 autoMini 监听 window.scroll，在 ScrollArea 布局下失效，改用手动实现
@@ -839,6 +842,16 @@ export default function UnifiedPlayer() {
 
     art.on('ready', () => {
       syncMobileControlBar()
+
+      // 自动续播下一集时，重置标记
+      if (pendingAutoPlayRef.current) {
+        pendingAutoPlayRef.current = false
+      }
+
+      // 恢复上一次的播放速率（playbackRate 构造选项只接受 boolean，需在 ready 后设置）
+      if (sessionPlaybackStateRef.current?.playbackRate) {
+        art.playbackRate = sessionPlaybackStateRef.current.playbackRate
+      }
 
       if (art.video) {
         art.video.style.objectFit = 'contain'
@@ -1049,6 +1062,11 @@ export default function UnifiedPlayer() {
       art.off('fullscreen', syncMobileControlBar)
       art.off('fullscreenWeb', syncMobileControlBar)
       if (playerRef.current && playerRef.current.destroy) {
+        // 保存当前播放状态，以便切换剧集时恢复播放速度和音量等设置
+        sessionPlaybackStateRef.current = {
+          playbackRate: playerRef.current.playbackRate,
+          volume: playerRef.current.volume,
+        }
         addHistorySnapshot()
         setActiveArt(current => (current === art ? null : current))
         playerRef.current.destroy(false)

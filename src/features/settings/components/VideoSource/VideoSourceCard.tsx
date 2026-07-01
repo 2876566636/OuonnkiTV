@@ -2,6 +2,7 @@ import { Rss, Pencil, Eye, Clock } from 'lucide-react'
 import { Badge } from '@/shared/components/ui/badge'
 import { Switch } from '@/shared/components/ui/switch'
 import { Button } from '@/shared/components/ui/button'
+import { Checkbox } from '@/shared/components/ui/checkbox'
 import { useApiStore } from '@/shared/store/apiStore'
 import {
   isSubscriptionSource,
@@ -15,17 +16,38 @@ import HealthStatusIndicator from './HealthStatusIndicator'
 interface VideoSourceCardProps {
   source: VideoSource
   onEdit: () => void
+  isEditMode?: boolean
+  isSelected?: boolean
+  onToggleSelect?: (id: string) => void
 }
 
-export default function VideoSourceCard({ source, onEdit }: VideoSourceCardProps) {
+export default function VideoSourceCard({
+  source,
+  onEdit,
+  isEditMode = false,
+  isSelected = false,
+  onToggleSelect,
+}: VideoSourceCardProps) {
   const { setApiEnabled } = useApiStore()
   const isSub = isSubscriptionSource(source.id)
+  const canSelect = isEditMode && !isSub
 
   return (
-    <div className="bg-muted/35 space-y-2.5 rounded-lg px-4 py-3">
+    <div
+      className={`bg-muted/35 space-y-2.5 rounded-lg px-4 py-3 ${canSelect ? 'cursor-pointer' : ''}`}
+      onClick={canSelect && onToggleSelect ? () => onToggleSelect(source.id) : undefined}
+    >
       {/* 第一行：名称 + 测速(桌面端) + 操作区 */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
+          {canSelect && (
+            <Checkbox
+              checked={isSelected}
+              className="shrink-0"
+              onClick={e => e.stopPropagation()}
+              onCheckedChange={() => onToggleSelect?.(source.id)}
+            />
+          )}
           {isSub && (
             <Rss className="size-3.5 shrink-0 text-violet-600 dark:text-violet-400" />
           )}
@@ -35,16 +57,21 @@ export default function VideoSourceCard({ source, onEdit }: VideoSourceCardProps
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          <Switch
-            checked={source.isEnabled}
-            onCheckedChange={checked => setApiEnabled(source.id, checked)}
-            onClick={e => e.stopPropagation()}
-          />
+          {!isEditMode && (
+            <Switch
+              checked={source.isEnabled}
+              onCheckedChange={checked => setApiEnabled(source.id, checked)}
+              onClick={e => e.stopPropagation()}
+            />
+          )}
           <Button
             variant="ghost"
             size="icon"
             className="size-7"
-            onClick={onEdit}
+            onClick={e => {
+              e.stopPropagation()
+              onEdit()
+            }}
           >
             {isSub ? <Eye className="size-3.5" /> : <Pencil className="size-3.5" />}
           </Button>

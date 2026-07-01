@@ -7,6 +7,9 @@ import {
   ArrowUpDown,
   Loader2,
   GripVertical,
+  Pencil,
+  Trash2,
+  X,
 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
@@ -37,6 +40,8 @@ import VideoSourceEditDialog from './VideoSourceEditDialog'
 import SubscriptionSourceDialog from './SubscriptionSourceDialog'
 import { URLSourceModal, TextSourceModal } from './ImportSourceModal'
 import { SettingsSection } from '../common'
+import { ConfirmModal } from '@/shared/components/common/ConfirmModal'
+import { Checkbox } from '@/shared/components/ui/checkbox'
 import { v4 as uuidv4 } from 'uuid'
 import type { VideoApi } from '@/shared/types'
 import type { VideoSource } from '@ouonnki/cms-core'
@@ -73,6 +78,11 @@ export default function VideoSource() {
   const [urlSourceModalOpen, setUrlSourceModalOpen] = useState(false)
   const [textSourceModalOpen, setTextSourceModalOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // 编辑模式（多选/批量删除）
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [confirmBatchDeleteOpen, setConfirmBatchDeleteOpen] = useState(false)
 
   // 拖拽传感器
   const sensors = useSensors(
@@ -202,6 +212,54 @@ export default function VideoSource() {
     }
   }
 
+  // 编辑模式 — 可被选中的源（非订阅源）
+  const selectableAPIs = videoAPIs.filter(s => !isSubscriptionSource(s.id))
+  const selectableCount = selectableAPIs.length
+  const isAllSelectableSelected = selectableCount > 0 && selectableAPIs.every(s => selectedIds.has(s.id))
+  const selectedCount = selectedIds.size
+
+  // 进入/退出编辑模式
+  const handleEnterEditMode = () => {
+    setSelectedIds(new Set())
+    setIsEditMode(true)
+  }
+
+  const handleExitEditMode = () => {
+    setSelectedIds(new Set())
+    setIsEditMode(false)
+  }
+
+  // 切换单个选中
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) {
+        next.delete(id)
+      } else {
+        next.add(id)
+      }
+      return next
+    })
+  }
+
+  // 全选/取消全选（仅可选中源）
+  const handleToggleSelectAll = () => {
+    if (isAllSelectableSelected) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(selectableAPIs.map(s => s.id)))
+    }
+  }
+
+  // 批量删除
+  const handleBatchDelete = () => {
+    if (selectedCount === 0) return
+    useApiStore.getState().removeVideoAPIs([...selectedIds])
+    toast.success(`成功删除 ${selectedCount} 个视频源`)
+    setSelectedIds(new Set())
+    setIsEditMode(false)
+  }
+
   // 导出为文本（排除订阅源）
   const handleExportToText = async () => {
     try {
@@ -236,99 +294,163 @@ export default function VideoSource() {
         icon={<Database className="size-4" />}
         tone="sky"
         action={
-          <div className="flex flex-wrap items-center gap-2">
-            {videoAPIs.length > 0 && (
+          isEditMode ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1.5">
+                <Checkbox
+                  checked={isAllSelectableSelected}
+                  onCheckedChange={handleToggleSelectAll}
+                />
+                <span className="text-xs text-muted-foreground">全选</span>
+              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-8 px-3"
+                disabled={selectedCount === 0}
+                onClick={() => setConfirmBatchDeleteOpen(true)}
+              >
+                <Trash2 className="mr-1 size-3.5" />
+                删除选中 {selectedCount > 0 && `(${selectedCount})`}
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-8 px-3"
-                onClick={handleBatchTest}
-                disabled={isTesting}
+                onClick={handleExitEditMode}
               >
-                {isTesting ? (
-                  <Loader2 className="mr-1 size-3.5 animate-spin" />
-                ) : (
-                  <Activity className="mr-1 size-3.5" />
-                )}
-                {isTesting
-                  ? `${testProgress.completed}/${testProgress.total}`
-                  : '测速'}
+                <X className="mr-1 size-3.5" />
+                取消
               </Button>
-            )}
-            {videoAPIs.length > 0 && hasResults && !isTesting && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-3"
-                onClick={handleSortByLatency}
-              >
-                <ArrowUpDown className="mr-1 size-3.5" />
-                按延迟排序
-              </Button>
-            )}
-            {videoAPIs.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-3"
-                onClick={() => (isAllSelected ? deselectAllAPIs() : selectAllAPIs())}
-              >
-                {isAllSelected ? (
-                  <CircleX className="mr-1 size-3.5" />
-                ) : (
-                  <CircleCheckBig className="mr-1 size-3.5" />
-                )}
-                {isAllSelected ? '全部停用' : '全部启用'}
-              </Button>
-            )}
-            <ActionDropdown
-              label="添加源"
-              items={[
-                {
-                  label: '手动添加',
-                  onClick: handleAddSource,
-                },
-                {
-                  label: '导入视频源',
-                  type: 'sub',
-                  children: [
-                    {
-                      label: '从文件导入',
-                      onClick: () => fileInputRef.current?.click(),
-                    },
-                    {
-                      label: '从URL导入',
-                      onClick: () => setUrlSourceModalOpen(true),
-                    },
-                    {
-                      label: '从文本导入',
-                      onClick: () => setTextSourceModalOpen(true),
-                    },
-                  ],
-                },
-                {
-                  label: '导出视频源',
-                  type: 'sub',
-                  children: [
-                    {
-                      label: '导出为文件',
-                      onClick: handleExportToFile,
-                    },
-                    {
-                      label: '导出为文本',
-                      onClick: handleExportToText,
-                    },
-                  ],
-                },
-              ]}
-            />
-          </div>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              {videoAPIs.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-3"
+                  onClick={handleBatchTest}
+                  disabled={isTesting}
+                >
+                  {isTesting ? (
+                    <Loader2 className="mr-1 size-3.5 animate-spin" />
+                  ) : (
+                    <Activity className="mr-1 size-3.5" />
+                  )}
+                  {isTesting
+                    ? `${testProgress.completed}/${testProgress.total}`
+                    : '测速'}
+                </Button>
+              )}
+              {videoAPIs.length > 0 && hasResults && !isTesting && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-3"
+                  onClick={handleSortByLatency}
+                >
+                  <ArrowUpDown className="mr-1 size-3.5" />
+                  按延迟排序
+                </Button>
+              )}
+              {videoAPIs.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-3"
+                  onClick={() => (isAllSelected ? deselectAllAPIs() : selectAllAPIs())}
+                >
+                  {isAllSelected ? (
+                    <CircleX className="mr-1 size-3.5" />
+                  ) : (
+                    <CircleCheckBig className="mr-1 size-3.5" />
+                  )}
+                  {isAllSelected ? '全部停用' : '全部启用'}
+                </Button>
+              )}
+              {videoAPIs.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-3"
+                  onClick={handleEnterEditMode}
+                >
+                  <Pencil className="mr-1 size-3.5" />
+                  编辑
+                </Button>
+              )}
+              <ActionDropdown
+                label="添加源"
+                items={[
+                  {
+                    label: '手动添加',
+                    onClick: handleAddSource,
+                  },
+                  {
+                    label: '导入视频源',
+                    type: 'sub',
+                    children: [
+                      {
+                        label: '从文件导入',
+                        onClick: () => fileInputRef.current?.click(),
+                      },
+                      {
+                        label: '从URL导入',
+                        onClick: () => setUrlSourceModalOpen(true),
+                      },
+                      {
+                        label: '从文本导入',
+                        onClick: () => setTextSourceModalOpen(true),
+                      },
+                    ],
+                  },
+                  {
+                    label: '导出视频源',
+                    type: 'sub',
+                    children: [
+                      {
+                        label: '导出为文件',
+                        onClick: handleExportToFile,
+                      },
+                      {
+                        label: '导出为文本',
+                        onClick: handleExportToText,
+                      },
+                    ],
+                  },
+                ]}
+              />
+            </div>
+          )
         }
       >
         {videoAPIs.length === 0 ? (
           <div className="text-muted-foreground flex h-20 items-center justify-center text-sm">
             暂无视频源，点击右上角「添加源」开始使用。
           </div>
+        ) : isEditMode ? (
+          <>
+            {/* 编辑模式 — 已选统计 */}
+            <div className="flex items-center justify-between gap-2">
+              <Badge variant="secondary" className="bg-sky-500/14 text-sky-700 dark:text-sky-300">
+                已选 {selectedCount}/{selectableCount}
+              </Badge>
+            </div>
+
+            <div className="space-y-2">
+              {videoAPIs.map(source => (
+                <SortableVideoSourceCard
+                  key={source.id}
+                  source={source}
+                  onEdit={() => handleEditSource(source)}
+                  isEditMode
+                  isSelected={selectedIds.has(source.id)}
+                  onToggleSelect={handleToggleSelect}
+                />
+              ))}
+            </div>
+          </>
         ) : (
           <>
             {/* 已启用统计 + 拖拽排序提示 */}
@@ -373,6 +495,16 @@ export default function VideoSource() {
           onChange={handleFileChange}
         />
       </SettingsSection>
+
+      <ConfirmModal
+        isOpen={confirmBatchDeleteOpen}
+        onClose={() => setConfirmBatchDeleteOpen(false)}
+        onConfirm={handleBatchDelete}
+        title="确定要删除选中的视频源吗？"
+        description={`此操作无法撤销，确认后将永久删除选中的 ${selectedCount} 个视频源，请谨慎操作。`}
+        confirmText="确定删除"
+        isDestructive
+      />
     </>
   )
 }

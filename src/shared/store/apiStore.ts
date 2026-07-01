@@ -33,6 +33,8 @@ interface ApiActions {
   addAndUpdateVideoAPI: (api: VideoSource) => void
   // 删除视频 API
   removeVideoAPI: (apiId: string) => void
+  // 批量删除视频 API
+  removeVideoAPIs: (apiIds: string[]) => void
   // 设置广告过滤
   setAdFilteringEnabled: (enabled: boolean) => void
   // 全选 API
@@ -120,6 +122,14 @@ export const useApiStore = create<ApiStore>()(
             const store = toSourceStore(state)
             const newStore = removeSource(store, apiId)
             state.videoAPIs = fromSourceStore(newStore)
+          })
+        },
+
+        removeVideoAPIs: (apiIds: string[]) => {
+          if (apiIds.length === 0) return
+          const idSet = new Set(apiIds)
+          set(state => {
+            state.videoAPIs = state.videoAPIs.filter(s => !idSet.has(s.id))
           })
         },
 

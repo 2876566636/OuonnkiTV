@@ -78,7 +78,7 @@ Each feature under `src/features/<name>/` follows a consistent structure:
 | `player` | Unified video player (Artplayer + hls.js), handles both TMDB and CMS direct routes |
 | `favorites` | Favorites CRUD with local Zustand store (persisted, covers both TMDB and CMS items) |
 | `history` | Viewing history tracking |
-| `settings` | Source management, playback, network, system, personal config |
+| `settings` | Source management (add/edit/import/export, multi-select batch delete via edit mode), playback, network, system, personal config |
 | `auth` | Thin re-export of `AuthGuard` component from shared |
 
 **Router** (`src/app/router/index.tsx`): React Router 7 with `createBrowserRouter`. All routes lazy-loaded via `React.lazy`. Key routes: `/` (Home), `/search`, `/favorites`, `/history`, `/media/:type/:tmdbId` (TMDB detail), `/play/:type/:tmdbId` (TMDB-based player), `/play/cms/:sourceCode/:vodId` (CMS direct player), `/settings/*` (nested settings).
@@ -91,6 +91,7 @@ All stores live in `src/shared/store/`, use Zustand with `immer` + `persist` mid
 |-------|-----|---------|
 | `useSettingStore` | `ouonnki-tv-setting-store` (v13) | All app settings: network, search, playback, system. Has migration logic across 13 schema versions. |
 | `useSearchStore` | `ouonnki-tv-search-store` | Search query + history (respects search settings). |
+| `useApiStore` | `ouonnki-tv-api-store` (v6) | Video source CRUD: add/update, remove (single + batch `removeVideoAPIs`), enable/disable, select/deselect all, import, reorder, subscription source management. Wraps `@ouonnki/cms-core/source` pure functions. |
 | `useFavoritesStore` | `ouonnki-tv-favorites-store` (v2) | Favorites list with filtering, sorting, tagging. Uses `partialize` to only persist `favorites`. CMS items use `utf8ToBase64` for ID generation (supports CJK characters). |
 | `useTmdbStore` | (not persisted) | TMDB search/discover/trending/recommendations with filtering. Uses `latestSearchRequestId` pattern to prevent race conditions. |
 | `useViewingHistoryStore` | `ouonnki-tv-viewing-history-store` | Watch progress tracking. |

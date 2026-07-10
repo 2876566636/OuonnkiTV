@@ -1,4 +1,4 @@
-import { ArrowLeft, Sparkles, Tv, Film } from 'lucide-react'
+import { ArrowLeft, Copy, Sparkles, Tv, Film } from 'lucide-react'
 import { Badge } from '@/shared/components/ui/badge'
 import { Button } from '@/shared/components/ui/button'
 import { getBackdropUrl, getPosterUrl } from '@/shared/lib/tmdb'
@@ -15,6 +15,7 @@ interface PlayerHeroSectionProps {
   currentEpisodeText: string
   totalEpisodeText: string
   onBack: () => void
+  onCopyUrl?: () => void
 }
 
 export function PlayerHeroSection({
@@ -28,6 +29,7 @@ export function PlayerHeroSection({
   currentEpisodeText,
   totalEpisodeText,
   onBack,
+  onCopyUrl,
 }: PlayerHeroSectionProps) {
   const mediaTypeText = tmdbMediaType === 'tv' ? '剧集' : tmdbMediaType === 'movie' ? '电影' : null
 
@@ -56,6 +58,17 @@ export function PlayerHeroSection({
         <ArrowLeft className="size-4" />
         返回
       </Button>
+
+      {onCopyUrl && (
+        <Button
+          variant="ghost"
+          className="absolute top-2.5 right-2.5 z-20 h-8 rounded-full px-2.5 !bg-transparent text-white/90 transition-colors hover:!bg-transparent hover:text-white sm:top-3 sm:right-3 sm:h-9 sm:px-3"
+          onClick={onCopyUrl}
+        >
+          <Copy className="size-4" />
+          复制链接
+        </Button>
+      )}
 
       <div className="relative z-10 flex min-h-[235px] flex-col justify-end p-3.5 pt-14 sm:min-h-[280px] sm:p-4 sm:pt-16 md:min-h-[340px] md:p-6 md:pt-16 lg:min-h-[400px] lg:p-7 lg:pt-20">
         <div className="grid items-end gap-3 sm:gap-4 lg:grid-cols-[minmax(0,1fr)_132px] lg:gap-6">

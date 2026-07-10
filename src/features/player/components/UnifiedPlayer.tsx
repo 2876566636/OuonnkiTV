@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom'
 import Artplayer from 'artplayer'
 import type Hls from 'hls.js'
 import type { HlsConfig } from 'hls.js'
-import { ChevronDown, X } from 'lucide-react'
+import { ChevronDown, Copy, X } from 'lucide-react'
 import { type DetailResult } from '@ouonnki/cms-core'
 import { createM3u8Processor, createHlsLoaderClass } from '@ouonnki/cms-core/m3u8'
 import { Button } from '@/shared/components/ui/button'
@@ -21,6 +21,7 @@ import { useSettingStore } from '@/shared/store/settingStore'
 import { useDocumentTitle, useCmsClient } from '@/shared/hooks'
 import { useTmdbEnabled } from '@/shared/hooks/useTmdbMode'
 import { cn } from '@/shared/lib/utils'
+import { copyToClipboard } from '@/shared/lib/clipboard'
 import { buildCmsPlayPath, buildTmdbDetailPath, buildTmdbPlayPath } from '@/shared/lib/routes'
 import { isTmdbHistoryItem } from '@/shared/lib/viewingHistory'
 import { getBackdropUrl } from '@/shared/lib/tmdb'
@@ -410,6 +411,20 @@ export default function UnifiedPlayer() {
       tmdbPlayback.selectedSeasonNumber,
     ],
   )
+
+  const handleCopyUrl = useCallback(async () => {
+    const videoUrl = detail?.episodes?.[selectedEpisode]
+    if (!videoUrl) {
+      toast.error('暂无播放链接')
+      return
+    }
+    const ok = await copyToClipboard(videoUrl)
+    if (ok) {
+      toast.success('已复制播放链接')
+    } else {
+      toast.error('复制失败，请手动复制')
+    }
+  }, [detail, selectedEpisode])
 
   useEffect(() => {
     if (!location.pathname.startsWith('/play/')) return
@@ -1530,6 +1545,7 @@ export default function UnifiedPlayer() {
           currentEpisodeText={episodes[selectedEpisode] || `第 ${selectedEpisode + 1} 集`}
           totalEpisodeText={`${detail.episodes.length} 集`}
           onBack={() => navigate(-1)}
+          onCopyUrl={handleCopyUrl}
         />
       )}
 
@@ -1639,7 +1655,18 @@ export default function UnifiedPlayer() {
             <section className="flex flex-col gap-3 rounded-lg border border-border/60 bg-card/55 p-3 md:p-4 xl:h-full">
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold">选集</h2>
-                <span className="text-muted-foreground text-xs">共 {detail.episodes.length} 集</span>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    aria-label="复制播放链接"
+                    onClick={handleCopyUrl}
+                  >
+                    <Copy className="size-3.5" />
+                  </Button>
+                  <span className="text-muted-foreground text-xs">共 {detail.episodes.length} 集</span>
+                </div>
               </div>
               <PlayerEpisodePanel
                 totalEpisodes={detail.episodes.length}

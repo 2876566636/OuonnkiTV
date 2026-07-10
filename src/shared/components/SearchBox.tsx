@@ -138,6 +138,20 @@ export default function SearchBox({ onMobileSearchChange }: SearchBoxProps) {
     }
   }, [])
 
+  // 组件卸载时重置移动端搜索状态，防止导航到搜索页面后导航栏内容被隐藏
+  useEffect(() => {
+    return () => {
+      // 使用函数式更新避免依赖 isMobileSearchOpen
+      setIsMobileSearchOpen(prev => {
+        if (prev) {
+          onMobileSearchChange?.(false)
+        }
+        return false
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // 下拉框内容组件
   const DropdownContent = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div className="p-1">

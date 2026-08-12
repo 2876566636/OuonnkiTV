@@ -103,7 +103,7 @@ export function MediaPosterCard({
         {/* 标题 - 卡片下方 */}
         {showTitle && (
           <div className="mt-2 px-0.5">
-            <p className="text-primary line-clamp-1 text-sm font-medium">{title}</p>
+            <p className="text-primary text-sm font-medium">{title}</p>
           </div>
         )}
       </div>
